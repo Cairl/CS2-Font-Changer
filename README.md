@@ -34,7 +34,9 @@
 
 <br>
 
-![image](https://github.com/user-attachments/assets/b4aa182a-f2f6-43da-8527-7d17cffbfedc)
+---
+
+<br>
 
 ![大厅界面](https://github.com/user-attachments/assets/f1f94e55-38ec-4bc1-b728-f526bc237e43)
 
