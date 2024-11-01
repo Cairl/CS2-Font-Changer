@@ -1,3 +1,7 @@
+![screenshot-1730452226114](https://github.com/user-attachments/assets/d2dd3fbe-0c07-466d-a20f-d292b6051615)
+
+<br>
+
 # CS2 Font Changer
 
 ### Change the in-game font by dragging the font file into the program.
@@ -29,8 +33,6 @@
 - **免责声明：** 本软件仅用于技术交流与思路分享。使用本软件即表示您已了解并同意：如遇任何使用问题（包括但不限于账号被封、电脑故障等），作者不承担任何责任。
 
 <br>
-
-![screenshot-1730452226114](https://github.com/user-attachments/assets/d2dd3fbe-0c07-466d-a20f-d292b6051615)
 
 ![image](https://github.com/user-attachments/assets/b4aa182a-f2f6-43da-8527-7d17cffbfedc)
 
