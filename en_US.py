@@ -4,43 +4,75 @@ import os
 import shutil
 from fontTools.ttLib import TTFont
 
-os.system('title CS2 Font Changer')
-print('CS2 Font Changer | Created by.Cairl')
-print('\n-----------------------------------\n')
+# Set window title
+os.system('title CS2 Font Changer v1.1')
 
-input_file = sys.argv[1] if len(sys.argv) == 2 else None
-if input_file is None or not (input_file.endswith('.ttf') and os.path.isfile(input_file)):
-    input('[Error] Please drag in a single valid .ttf file.')
-    sys.exit(1)
+# Game installation path input and validation loop
+while True:
+	os.system('cls')
+	print('CS2 Font Changer v1.1 | Author: Cairl')
+	print('\n- - - - - - - - - - - - - - - - - - -')
 
-# Get input font name
-font = TTFont(input_file)
-font_name = next((str(record).strip() for record in font['name'].names if record.nameID == 1), None)
+	# Validate input file
+	input_file = sys.argv[1] if len(sys.argv) == 2 else None
+	if input_file is None or not (input_file.endswith('.ttf') and os.path.isfile(input_file)):
+		input('\n[ERROR] Invalid input file. Please provide a valid .ttf file.')
+		sys.exit(1)
 
-# Get target path
-key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 730')
-install_location = winreg.QueryValueEx(key, 'InstallLocation')[0]
+	# Extract font name from .ttf file
+	font = TTFont(input_file)
+	font_name = next((str(record).strip() for record in font['name'].names if record.nameID == 1), None)
 
+	# Retrieve the game installation path from the registry
+	try:
+		key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 730')
+		install_location = winreg.QueryValueEx(key, 'InstallLocation')[0]
+	except FileNotFoundError:
+		install_location = None
+
+	# Validate the game installation path
+	if install_location:
+		print(f'\nDetected current game installation path:')
+		print(f'"{install_location}"')
+		print('\nPress Enter to use the current path, or enter a new one:')
+		user_input = input().strip('"')
+	else:
+		print('\n[ERROR] No game installation path detected. Please manually input a valid path:')
+
+	# Process user input path
+	if user_input:
+		if os.path.exists(user_input) and user_input.endswith('Counter-Strike Global Offensive'):
+			install_location = user_input
+			print()
+			break
+		else:
+			input('\n[ERROR] Invalid path. Please ensure the path ends with "Counter-Strike Global Offensive" folder. Press Enter to retry.')
+	else:
+		if install_location:
+			break
+		else:
+			input('\n[ERROR] No valid path provided. Press Enter to input a valid path.')
+
+# Construct target path
 csgo_fonts = os.path.join(install_location, 'game', 'csgo', 'panorama', 'fonts')
 core_fonts = os.path.join(install_location, 'game', 'core', 'panorama', 'fonts', 'conf.d')
 
 ui_font = os.path.join(csgo_fonts, 'stratum2.uifont')
 
-# Delete existing "stratum2.uifont" file
+# Remove existing font file
 if os.path.exists(ui_font):
-    os.remove(ui_font)
+	os.remove(ui_font)
 
-# Delete existing font files
 for file in os.listdir(csgo_fonts):
-    if file.endswith('.ttf'):
-        os.remove(os.path.join(csgo_fonts, file))
+	if file.endswith('.ttf'):
+		os.remove(os.path.join(csgo_fonts, file))
 
-# Copy and rename font files to target path
+# Copy and rename the font file
 shutil.copy(input_file, os.path.join(csgo_fonts, f"{font_name}.ttf"))
 
-# Overwrite "fonts.conf" content
+# Overwrite "fonts.conf" configuration file content
 with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
-    f.write(f"""<?xml version='1.0'?>
+	f.write(f"""<?xml version='1.0'?>
 <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
 <fontconfig>
 
@@ -499,7 +531,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 </fontconfig>
 """)
 
-# Overwrite "42-repl-global.conf" content
+# Overwrite "42-repl-global.conf" configuration file content
 with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
     f.write(f"""<?xml version='1.0'?>
 <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
@@ -666,4 +698,4 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 </fontconfig>
 """)
 
-input(f'[Success] Game font has been replaced: {font_name}')
+input(f'[DONE] Game font successfully changed with: {font_name}')

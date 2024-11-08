@@ -4,43 +4,75 @@ import os
 import shutil
 from fontTools.ttLib import TTFont
 
-os.system('title CS2 字体更改器')
-print('CS2 字体更改器 | 作者.Cairl')
-print('\n---------------------------\n')
+# 设置窗口标题
+os.system('title CS2 字体更改器v1.1')
 
-input_file = sys.argv[1] if len(sys.argv) == 2 else None
-if input_file is None or not (input_file.endswith('.ttf') and os.path.isfile(input_file)):
-    input('[错误] 请拖入一个有效的 .ttf 文件。')
-    sys.exit(1)
+# 游戏安装路径输入与验证循环
+while True:
+	os.system('cls')
+	print('CS2 字体更改器v1.1 | 作者: Cairl')
+	print('\n- - - - - - - - - - - - - - - -')
 
-# 获取输入字体名称
-font = TTFont(input_file)
-font_name = next((str(record).strip() for record in font['name'].names if record.nameID == 1), None)
+	# 检查输入文件是否有效
+	input_file = sys.argv[1] if len(sys.argv) == 2 else None
+	if input_file is None or not (input_file.endswith('.ttf') and os.path.isfile(input_file)):
+		input('[ERROR] 输入文件无效。请提供有效的 .ttf 文件。')
+		sys.exit(1)
 
-# 获取目标路径
-key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 730')
-install_location = winreg.QueryValueEx(key, 'InstallLocation')[0]
+	# 从 .ttf 文件中提取字体名称
+	font = TTFont(input_file)
+	font_name = next((str(record).strip() for record in font['name'].names if record.nameID == 1), None)
+		
+	# 获取注册表中的游戏安装路径
+	try:
+		key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 730')
+		install_location = winreg.QueryValueEx(key, 'InstallLocation')[0]
+	except FileNotFoundError:
+		install_location = None
 
+	# 验证游戏路径的有效性
+	if install_location:
+		print(f'\n检测到当前游戏安装路径：')
+		print(f'"{install_location}"')
+		print('\n按回车键使用当前路径，或输入新的路径：')
+		user_input = input().strip('"')
+	else:
+		print('\n[错误] 未检测到游戏安装路径。请手动输入有效路径：')
+
+	# 处理用户输入的路径
+	if user_input:
+		if os.path.exists(user_input) and user_input.endswith('Counter-Strike Global Offensive'):
+			install_location = user_input
+			print()
+			break
+		else:
+			input('\n[错误] 路径无效。请确保路径以 "Counter-Strike Global Offensive" 文件夹为结尾。按回车键重新输入。')
+	else:
+		if install_location:
+			break
+		else:
+			input('\n[错误] 未提供有效路径。请按回车键重新输入有效路径。')
+
+# 构造目标路径
 csgo_fonts = os.path.join(install_location, 'game', 'csgo', 'panorama', 'fonts')
 core_fonts = os.path.join(install_location, 'game', 'core', 'panorama', 'fonts', 'conf.d')
 
 ui_font = os.path.join(csgo_fonts, 'stratum2.uifont')
 
-# 删除现有的 "stratum2.uifont" 文件
+# 删除现有字体文件
 if os.path.exists(ui_font):
-    os.remove(ui_font)
+	os.remove(ui_font)
 
-# 删除现有的字体文件
 for file in os.listdir(csgo_fonts):
-    if file.endswith('.ttf'):
-        os.remove(os.path.join(csgo_fonts, file))
+	if file.endswith('.ttf'):
+		os.remove(os.path.join(csgo_fonts, file))
 
-# 复制并重命名字体文件到目标路径
+# 复制并重命名字体文件
 shutil.copy(input_file, os.path.join(csgo_fonts, f"{font_name}.ttf"))
 
-# 覆盖 "fonts.conf" 内容
+# 覆盖 "fonts.conf" 配置文件内容
 with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
-    f.write(f"""<?xml version='1.0'?>
+	f.write(f"""<?xml version='1.0'?>
 <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
 <fontconfig>
 
@@ -499,7 +531,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 </fontconfig>
 """)
 
-# 覆盖 "42-repl-global.conf" 内容
+# 覆盖 "42-repl-global.conf" 配置文件内容
 with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
     f.write(f"""<?xml version='1.0'?>
 <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
@@ -666,4 +698,4 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 </fontconfig>
 """)
 
-input(f'[成功] 游戏字体已被替换：{font_name}')
+input(f'[完成] 游戏字体已成功更改为: {font_name}')
