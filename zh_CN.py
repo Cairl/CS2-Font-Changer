@@ -5,12 +5,12 @@ import shutil
 from fontTools.ttLib import TTFont
 
 # 设置窗口标题
-os.system('title CS2 字体更改器v1.1')
+os.system('title CS2 字体更改器v1.2')
 
 # 游戏安装路径输入与验证循环
 while True:
 	os.system('cls')
-	print('CS2 字体更改器v1.1 | 作者: Cairl')
+	print('CS2 字体更改器v1.2 | 作者: Cairl')
 	print('\n- - - - - - - - - - - - - - - -')
 
 	# 检查输入文件是否有效
@@ -38,6 +38,7 @@ while True:
 		user_input = input().strip('"')
 	else:
 		print('\n[错误] 未检测到游戏安装路径。请手动输入有效路径：')
+		user_input = input().strip('"')
 
 	# 处理用户输入的路径
 	if user_input:

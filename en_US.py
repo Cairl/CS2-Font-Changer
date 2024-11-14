@@ -5,12 +5,12 @@ import shutil
 from fontTools.ttLib import TTFont
 
 # Set window title
-os.system('title CS2 Font Changer v1.1')
+os.system('title CS2 Font Changer v1.2')
 
 # Game installation path input and validation loop
 while True:
 	os.system('cls')
-	print('CS2 Font Changer v1.1 | Author: Cairl')
+	print('CS2 Font Changer v1.2 | Author: Cairl')
 	print('\n- - - - - - - - - - - - - - - - - - -')
 
 	# Validate input file
@@ -38,6 +38,7 @@ while True:
 		user_input = input().strip('"')
 	else:
 		print('\n[ERROR] No game installation path detected. Please manually input a valid path:')
+		user_input = input().strip('"')
 
 	# Process user input path
 	if user_input:
