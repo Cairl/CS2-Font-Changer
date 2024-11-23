@@ -35,9 +35,9 @@ while True:
 
     # Validate the game path
     if install_location:
-        print(f'\nDetected current game installation path:')
+        print('\n[Notice] Detected current game installation path:')
         print(f'"{install_location}"')
-        print('\nPress Enter to use this path, or enter a new path:')
+        print('\n[Notice] Press Enter to use this path, or enter a new path:')
         user_input = input().strip('"')
     else:
         print('\n[Error] No game installation path detected! Please manually input a valid path:')

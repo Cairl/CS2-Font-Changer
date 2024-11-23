@@ -35,9 +35,9 @@ while True:
 
     # 验证游戏路径的有效性
     if install_location:
-        print(f'\n检测到当前游戏安装路径：')
+        print('\n[提示] 检测到当前游戏安装路径：')
         print(f'"{install_location}"')
-        print('\n按回车键确认使用该路径，或输入新的路径：')
+        print('\n[提示] 按回车键确认使用该路径，或输入新的路径：')
         user_input = input().strip('"')
     else:
         print('\n[错误] 未检测到游戏安装路径！请手动输入有效路径：')
