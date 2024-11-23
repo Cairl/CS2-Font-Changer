@@ -4,74 +4,77 @@ import os
 import shutil
 from fontTools.ttLib import TTFont
 
-# Set window title
-os.system('title CS2 Font Changer v1.2')
+# Set the command line window title
+os.system('title CS2 Font Changer v1.3')
 
-# Game installation path input and validation loop
+# Game installation path input and validation
 while True:
-	os.system('cls')
-	print('CS2 Font Changer v1.2 | Author: Cairl')
-	print('\n- - - - - - - - - - - - - - - - - - -')
+    os.system('cls')
+    print('CS2 Font Changer v1.3 | Author: Cairl')
+    print('\n-  -  -  -  -  -  -  -  -  -  -  -  -')
 
-	# Validate input file
-	input_file = sys.argv[1] if len(sys.argv) == 2 else None
-	if input_file is None or not (input_file.endswith('.ttf') and os.path.isfile(input_file)):
-		input('\n[ERROR] Invalid input file. Please provide a valid .ttf file.')
-		sys.exit(1)
+    # Check if the input font file is valid
+    input_file = sys.argv[1] if len(sys.argv) == 2 else None
+    if not input_file or not input_file.endswith(('.ttf', '.otf')) or not os.path.isfile(input_file):
+        input('\n[Error] Invalid input file! Please provide a valid .ttf or .otf font file.')
+        sys.exit(1)
 
-	# Extract font name from .ttf file
-	font = TTFont(input_file)
-	font_name = next((str(record).strip() for record in font['name'].names if record.nameID == 1), None)
+    try:
+        font = TTFont(input_file)
+        font_name = next((str(record).strip() for record in font['name'].names if record.nameID == 1), None)
+    except Exception:
+        input(f'\n[Error] "{os.path.basename(input_file)}" is not a supported font collection.')
+        sys.exit(1)
 
-	# Retrieve the game installation path from the registry
-	try:
-		key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 730')
-		install_location = winreg.QueryValueEx(key, 'InstallLocation')[0]
-	except FileNotFoundError:
-		install_location = None
+    # Retrieve the game installation path from the registry
+    try:
+        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 730')
+        install_location = winreg.QueryValueEx(key, 'InstallLocation')[0]
+    except FileNotFoundError:
+        install_location = None
 
-	# Validate the game installation path
-	if install_location:
-		print(f'\nDetected current game installation path:')
-		print(f'"{install_location}"')
-		print('\nPress Enter to use the current path, or enter a new one:')
-		user_input = input().strip('"')
-	else:
-		print('\n[ERROR] No game installation path detected. Please manually input a valid path:')
-		user_input = input().strip('"')
+    # Validate the game path
+    if install_location:
+        print(f'\nDetected current game installation path:')
+        print(f'"{install_location}"')
+        print('\nPress Enter to use this path, or enter a new path:')
+        user_input = input().strip('"')
+    else:
+        print('\n[Error] No game installation path detected! Please manually input a valid path:')
+        user_input = input().strip('"')
 
-	# Process user input path
-	if user_input:
-		if os.path.exists(user_input) and user_input.endswith('Counter-Strike Global Offensive'):
-			install_location = user_input
-			print()
-			break
-		else:
-			input('\n[ERROR] Invalid path. Please ensure the path ends with "Counter-Strike Global Offensive" folder. Press Enter to retry.')
-	else:
-		if install_location:
-			break
-		else:
-			input('\n[ERROR] No valid path provided. Press Enter to input a valid path.')
+    # Process the user's input path
+    if user_input:
+        if os.path.exists(user_input) and user_input.endswith('Counter-Strike Global Offensive'):
+            install_location = user_input
+            print()
+            break
+        else:
+            input('\n[Error] Invalid path! Ensure the path ends with the "Counter-Strike Global Offensive" folder. Press Enter to re-enter the path.')
+    else:
+        if install_location:
+            break
+        else:
+            input('\n[Error] No valid path provided! Press Enter to re-enter the path.')
 
-# Construct target path
+# Construct the target paths
 csgo_fonts = os.path.join(install_location, 'game', 'csgo', 'panorama', 'fonts')
 core_fonts = os.path.join(install_location, 'game', 'core', 'panorama', 'fonts', 'conf.d')
 
 ui_font = os.path.join(csgo_fonts, 'stratum2.uifont')
 
-# Remove existing font file
+# Remove existing font files
 if os.path.exists(ui_font):
-	os.remove(ui_font)
+    os.remove(ui_font)
 
 for file in os.listdir(csgo_fonts):
-	if file.endswith('.ttf'):
-		os.remove(os.path.join(csgo_fonts, file))
+    if file.endswith('.ttf'):
+        os.remove(os.path.join(csgo_fonts, file))
 
 # Copy and rename the font file
 shutil.copy(input_file, os.path.join(csgo_fonts, f"{font_name}.ttf"))
 
-# Overwrite "fonts.conf" configuration file content
+# Overwrite the "fonts.conf" configuration file
 with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 	f.write(f"""<?xml version='1.0'?>
 <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
@@ -532,7 +535,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 </fontconfig>
 """)
 
-# Overwrite "42-repl-global.conf" configuration file content
+# Overwrite the "42-repl-global.conf" configuration file
 with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
     f.write(f"""<?xml version='1.0'?>
 <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
@@ -699,4 +702,4 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 </fontconfig>
 """)
 
-input(f'[DONE] Game font successfully changed with: {font_name}')
+input(f'[Completed] Game font successfully changed to: {font_name}')
