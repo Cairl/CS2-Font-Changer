@@ -4,94 +4,140 @@ import os
 import shutil
 from fontTools.ttLib import TTFont
 
-# Set the command line window title
-os.system('title CS2 Font Changer v1.3')
+def verify_files(csgo_fonts, font_name):
+	"""Verify if files are installed correctly"""
+	font_file = os.path.join(csgo_fonts, f"{font_name}.ttf")
+	conf_file = os.path.join(csgo_fonts, 'fonts.conf')
+	
+	print('\n[Verifying] Checking files...')
+	if not os.path.exists(font_file):
+		print(f'\n[Error] Font file not copied successfully: {font_file}')
+		return False
+	if not os.path.exists(conf_file):
+		print(f'\n[Error] Config file not created: {conf_file}')
+		return False
+	if os.path.getsize(font_file) == 0:
+		print(f'\n[Error] Font file size is 0: {font_file}')
+		return False
+	
+	print('\n[Success] File verification passed')
+	return True
 
-# Game installation path input and validation
+# Game installation path input and verification
 while True:
-    os.system('cls')
-    print('CS2 Font Changer v1.3 | Author: Cairl')
-    print('\n-  -  -  -  -  -  -  -  -  -  -  -  -')
+	os.system('cls')
+	print('\nCS2 Font Changer v2.0 | Author: Cairl')
+	print('\n-  -  -  -  -  -  -  -  -  -  -  -  -')
 
-    # Check if the input font file is valid
-    input_file = sys.argv[1] if len(sys.argv) == 2 else None
-    if not input_file or not input_file.endswith(('.ttf', '.otf')) or not os.path.isfile(input_file):
-        input('\n[Error] Invalid input file! Please provide a valid .ttf or .otf font file.')
-        sys.exit(1)
+	# Check if input font file is valid
+	input_file = sys.argv[1] if len(sys.argv) == 2 else None
+	if not input_file or not input_file.endswith(('.ttf', '.otf')) or not os.path.isfile(input_file):
+		input('\n[Error] Invalid input file! Please provide a valid .ttf or .otf font file.')
+		sys.exit(1)
 
-    try:
-        font = TTFont(input_file)
-        font_name = next((str(record).strip() for record in font['name'].names if record.nameID == 1), None)
-    except Exception:
-        input(f'\n[Error] "{os.path.basename(input_file)}" is not a supported font collection.')
-        sys.exit(1)
+	try:
+		font = TTFont(input_file)
+		font_name = next((record.toUnicode().strip() 
+			for record in font['name'].names 
+			if record.nameID == 1 and record.platformID == 3), None)
+		if font_name is None:
+			raise Exception("Unable to read font name")
+		print(f'\n[Info] Successfully read font name: {font_name}')
+	except Exception as e:
+		input(f'\n[Error] "{os.path.basename(input_file)}" is an unsupported font. {str(e)}')
+		sys.exit(1)
 
-    # Retrieve the game installation path from the registry
-    try:
-        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 730')
-        install_location = winreg.QueryValueEx(key, 'InstallLocation')[0]
-    except FileNotFoundError:
-        install_location = None
+	# Get game installation path from registry
+	try:
+		key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 730')
+		install_location = winreg.QueryValueEx(key, 'InstallLocation')[0]
+	except FileNotFoundError:
+		install_location = None
 
-    # Validate the game path
-    if install_location:
-        print('\n[Notice] Detected current game installation path:')
-        print(f'"{install_location}"')
-        print('\n[Notice] Press Enter to use this path, or enter a new path:')
-        user_input = input().strip('"')
-    else:
-        print('\n[Error] No game installation path detected! Please manually input a valid path:')
-        user_input = input().strip('"')
+	# Verify game path validity
+	if install_location:
+		print('\n[Info] Detected game installation path:')
+		print(install_location)
+		print('\nPress Enter to confirm this path, or input a new path:')
+	else:
+		print('\n[Error] Game installation path not detected! Please enter valid path manually:')
+	
+	user_input = input().strip('"')
 
-    # Process the user's input path
-    if user_input:
-        if os.path.exists(user_input) and user_input.endswith('Counter-Strike Global Offensive'):
-            install_location = user_input
-            print()
-            break
-        else:
-            input('\n[Error] Invalid path! Ensure the path ends with the "Counter-Strike Global Offensive" folder. Press Enter to re-enter the path.')
-    else:
-        if install_location:
-            break
-        else:
-            input('\n[Error] No valid path provided! Press Enter to re-enter the path.')
+	# Process user input path
+	if user_input:
+		if os.path.exists(user_input) and user_input.endswith('Counter-Strike Global Offensive'):
+			install_location = user_input
+			break
+		else:
+			input('\n[Error] Invalid path! Make sure the path ends with "Counter-Strike Global Offensive" folder. Press Enter to retry.')
+	else:
+		if install_location:
+			break
+		else:
+			input('\n[Error] No valid path provided! Press Enter to retry.')
 
-# Construct the target paths
+# Construct target paths
 csgo_fonts = os.path.join(install_location, 'game', 'csgo', 'panorama', 'fonts')
 core_fonts = os.path.join(install_location, 'game', 'core', 'panorama', 'fonts', 'conf.d')
 
+# Check directories
+if not os.path.exists(csgo_fonts):
+	print(f'\n[Error] Font directory does not exist: {csgo_fonts}')
+	os.makedirs(csgo_fonts, exist_ok=True)
+	print('\n[Info] Created font directory')
+
+if not os.path.exists(core_fonts):
+	print(f'\n[Error] Core font directory does not exist: {core_fonts}')
+	os.makedirs(core_fonts, exist_ok=True)
+	print('\n[Info] Created core font directory')
+
 ui_font = os.path.join(csgo_fonts, 'stratum2.uifont')
 
-# Remove existing font files
+# Delete existing font files
 if os.path.exists(ui_font):
-    os.remove(ui_font)
+	try:
+		os.remove(ui_font)
+		print('\n[Info] Deleted existing UI font file')
+	except Exception as e:
+		print(f'\n[Warning] Failed to delete UI font file: {str(e)}')
 
 for file in os.listdir(csgo_fonts):
-    if file.endswith('.ttf'):
-        os.remove(os.path.join(csgo_fonts, file))
+	if file.endswith('.ttf'):
+		try:
+			os.remove(os.path.join(csgo_fonts, file))
+			print(f'\n[Info] Deleted font file: {file}')
+		except Exception as e:
+			print(f'\n[Warning] Failed to delete font file: {file} - {str(e)}')
 
-# Copy and rename the font file
-shutil.copy(input_file, os.path.join(csgo_fonts, f"{font_name}.ttf"))
+# Copy new font file
+try:
+	safe_font_name = font_name
+	shutil.copy(input_file, os.path.join(csgo_fonts, f"{font_name}.ttf"))
+	print(f'\n[Info] Copied new font file: {font_name}.ttf')
+except Exception as e:
+	print(f'\n[Error] Failed to copy font file: {str(e)}')
+	sys.exit(1)
 
-# Overwrite the "fonts.conf" configuration file
-with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
-	f.write(f"""<?xml version='1.0'?>
+# Write config files
+try:
+	with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w', encoding='utf-8') as f:
+		f.write(f"""<?xml version='1.0'?>
 <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
 <fontconfig>
 
 	<!-- Choose an OS Rendering Style.  This will determine B/W, grayscale,
-	     or subpixel antialising and slight, full or no hinting and replacements (if set in next option) -->
+		or subpixel antialising and slight, full or no hinting and replacements (if set in next option) -->
 	<!-- Style should also be set in the infinality-settings.sh file, ususally in /etc/profile.d/ -->
 
 	<!-- Choose one of these options:
-		Infinality      - subpixel AA, minimal replacements/tweaks, sans=Arial
-		Windows 7       - subpixel AA, sans=Arial
-		Windows XP      - subpixel AA, sans=Arial
-		Windows 98      - B/W full hinting on TT fonts, grayscale AA for others, sans=Arial
-		OSX             - Slight hinting, subpixel AA, sans=Helvetica Neue
-		OSX2            - No hinting, subpixel AA, sans=Helvetica Neue
-		Linux           - subpixel AA, sans=DejaVu Sans
+		Infinality	  - subpixel AA, minimal replacements/tweaks, sans=Arial
+		Windows 7	  - subpixel AA, sans=Arial
+		Windows XP	  - subpixel AA, sans=Arial
+		Windows 98	  - B/W full hinting on TT fonts, grayscale AA for others, sans=Arial
+		OSX			  - Slight hinting, subpixel AA, sans=Helvetica Neue
+		OSX2		  - No hinting, subpixel AA, sans=Helvetica Neue
+		Linux		  - subpixel AA, sans=DejaVu Sans
 
 	=== Recommended Setup ===
 	Run ./infctl.sh script located in the current directory to set the style.
@@ -119,7 +165,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 	<fontpattern>notosans</fontpattern>
 	<fontpattern>notoserif</fontpattern>
 	<fontpattern>notomono-regular</fontpattern>
-	<fontpattern>{font_name}</fontpattern>
+	<fontpattern>{safe_font_name}</fontpattern>
 	<fontpattern>.ttf</fontpattern>
 	<fontpattern>FONTFILENAME</fontpattern>
 	
@@ -284,8 +330,8 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 		</edit>
 	</match>
 
- 	<!-- Stratum contains a set of arrow symbols in place of certain greek/mathematical characters - presumably for some historical reason, possibly used by VGUI somewhere?. -->
- 	<!-- For panorama these Stratum characters should be ignored and picked up from a fallback font instead. -->
+	<!-- Stratum contains a set of arrow symbols in place of certain greek/mathematical characters - presumably for some historical reason, possibly used by VGUI somewhere?. -->
+	<!-- For panorama these Stratum characters should be ignored and picked up from a fallback font instead. -->
 	<!-- Update for new source2 versions of Stratum, exclude all four of the greek characters which are included in the new Stratum fonts (sometimes as arrows, sometimes not). Best to fallback in all cases to Arial. -->
 	<match target="scan">
 		<test name="family">
@@ -397,7 +443,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 			<string>Stratum2</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 		<edit name="pixelsize" mode="assign">
 			<times>
@@ -412,7 +458,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 			<string>Stratum2 Bold</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 		<edit name="pixelsize" mode="assign">
 			<times>
@@ -427,7 +473,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 			<string>Arial</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 		<edit name="pixelsize" mode="assign">
 			<times>
@@ -442,7 +488,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 			<string>Times New Roman</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 		<edit name="pixelsize" mode="assign">
 			<times>
@@ -457,7 +503,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 			<string>Courier New</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 		<edit name="pixelsize" mode="assign">
 			<times>
@@ -477,7 +523,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 			<string>notosans</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 		<edit name="pixelsize" mode="assign">
 			<times>
@@ -492,7 +538,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 			<string>notoserif</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 		<edit name="pixelsize" mode="assign">
 			<times>
@@ -507,7 +553,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 			<string>notomono-regular</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 		<edit name="pixelsize" mode="assign">
 			<times>
@@ -522,7 +568,7 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 			<string>noto</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 		<edit name="pixelsize" mode="assign">
 			<times>
@@ -532,12 +578,14 @@ with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w') as f:
 		</edit>
 	</match>
 
-</fontconfig>
-""")
+</fontconfig>""")
+	print('\n[Info] Written fonts.conf configuration file')
+except Exception as e:
+	print(f'\n[Error] Failed to write fonts.conf: {str(e)}')
 
-# Overwrite the "42-repl-global.conf" configuration file
-with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
-    f.write(f"""<?xml version='1.0'?>
+try:
+	with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w', encoding='utf-8') as f:
+		f.write(f"""<?xml version='1.0'?>
 <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
 <fontconfig>
 
@@ -551,7 +599,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>Stratum2</string>
 		</test>
 		<edit name="family" mode="assign">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 	<match target="pattern">
@@ -559,7 +607,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>Stratum2</string>
 		</test>
 		<edit name="family" mode="prepend" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 
@@ -568,7 +616,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>Stratum2 Bold</string>
 		</test>
 		<edit name="family" mode="assign">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 	<match target="pattern">
@@ -576,7 +624,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>Stratum2 Bold</string>
 		</test>
 		<edit name="family" mode="prepend" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 
@@ -585,7 +633,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>Arial</string>
 		</test>
 		<edit name="family" mode="assign">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 	<match target="pattern">
@@ -593,7 +641,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>Arial</string>
 		</test>
 		<edit name="family" mode="prepend" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 
@@ -602,7 +650,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>Times New Roman</string>
 		</test>
 		<edit name="family" mode="assign">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 	<match target="pattern">
@@ -610,7 +658,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>Times New Roman</string>
 		</test>
 		<edit name="family" mode="prepend" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 
@@ -619,7 +667,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>Courier New</string>
 		</test>
 		<edit name="family" mode="assign">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 	<match target="pattern">
@@ -627,7 +675,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>Courier New</string>
 		</test>
 		<edit name="family" mode="prepend" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 
@@ -636,7 +684,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>notosans</string>
 		</test>
 		<edit name="family" mode="assign">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 	<match target="pattern">
@@ -644,7 +692,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>notosans</string>
 		</test>
 		<edit name="family" mode="prepend" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 
@@ -653,7 +701,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>notoserif</string>
 		</test>
 		<edit name="family" mode="assign">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 	<match target="pattern">
@@ -661,7 +709,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>notoserif</string>
 		</test>
 		<edit name="family" mode="prepend" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 
@@ -670,7 +718,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>notomono-regular</string>
 		</test>
 		<edit name="family" mode="assign">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 	<match target="pattern">
@@ -678,7 +726,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>notomono-regular</string>
 		</test>
 		<edit name="family" mode="prepend" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 
@@ -687,7 +735,7 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>noto</string>
 		</test>
 		<edit name="family" mode="assign">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 	<match target="pattern">
@@ -695,11 +743,17 @@ with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w') as f:
 			<string>noto</string>
 		</test>
 		<edit name="family" mode="prepend" binding="strong">
-			<string>{font_name}</string>
+			<string>{safe_font_name}</string>
 		</edit>
 	</match>
 	
-</fontconfig>
-""")
+</fontconfig>""")
+	print('\n[Info] Written 42-repl-global.conf configuration file')
+except Exception as e:
+	print(f'\n[Error] Failed to write 42-repl-global.conf: {str(e)}')
 
-input(f'[Completed] Game font successfully changed to: {font_name}')
+# Verify installation
+if verify_files(csgo_fonts, font_name):
+	input(f'\n[Complete] Game font has been changed to: {font_name}')
+else:
+	input('\n[Error] Font installation may have failed, please check the error messages above')
