@@ -1,14 +1,10 @@
-<center>
+<p align="center"><img src="/pic/banner.png"></p>
 
-![Banner of CS2 Font Changer](/pic/banner.png)
+<h1 align="center">CS2 Font Changer</h1>
 
-# CS2 Font Changer
+<h3 align="center">Change the in-game font automatically by dragging the font file into the program.</h3>
 
-### Change the in-game font by dragging the font file into the program.
-
-English | [中文](/README-zh.md)
-
-</center>
+<p align="center">English | <a href="/README-zh.md">中文</a></p>
 
 ---
 

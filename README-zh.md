@@ -1,14 +1,10 @@
-<center>
+<p align="center"><img src="/pic/banner.png"></p>
 
-![CS2 字体更改器封面](/pic/banner.png)
+<h1 align="center">CS2 字体更改器</h1>
 
-# CS2 字体更改器
+<h3 align="center">通过将字体文件拖入程序来更改游戏中的字体。</h3>
 
-### 通过将字体文件拖入程序来更改游戏中的字体。
-
-[English](/README.md) | 中文
-
-</center>
+<p align="center"><a href="/README.md">English</a> | 中文</p>
 
 ---
 
