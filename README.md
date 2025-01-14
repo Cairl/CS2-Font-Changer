@@ -20,7 +20,7 @@
 
 Download the latest release [en_US.exe](https://github.com/Cairl/CS2-Font-Changer/releases/latest/download/en_US.exe) / [zh_CN.exe](https://github.com/Cairl/CS2-Font-Changer/releases/latest/download/zh_CN.exe).
 
-Drag and drop a .ttf & .otf file onto .exe (not opening it), then follow the prompts in the program window.
+Drag and drop a .ttf or .otf file onto .exe (not opening it), then follow the prompts in the program window.
 
 > [!NOTE]
 >
