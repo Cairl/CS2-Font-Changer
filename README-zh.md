@@ -20,7 +20,7 @@
 
 从最新的 GitHub Release 下载 [zh_CN.exe](https://github.com/Cairl/CS2-Font-Changer/releases/latest/download/zh_CN.exe) 或 [en_US.exe](https://github.com/Cairl/CS2-Font-Changer/releases/latest/download/en_US.exe)。
 
-将 ttf 字体文件拖拽到下载的 exe 程序上（而不是直接打开）, 然后按照弹出窗口中的提示操作。
+将 ttf 或 otf 字体文件拖拽到下载的 exe 程序上（而不是直接打开）, 然后按照弹出窗口中的提示操作。
 
 > [!NOTE]
 >
