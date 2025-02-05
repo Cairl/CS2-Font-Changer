@@ -32,15 +32,7 @@ CS2 字体更改器让您能够轻松自定义 Counter-Strike 2 游戏内的字�
 
 ## 📥 下载
 
-<p align="center">
-    <a href="https://github.com/Cairl/CS2-Font-Changer/releases/latest/download/en_US.exe">
-        <img src="https://img.shields.io/badge/下载-英文版本-blue?style=for-the-badge&logo=windows" alt="下载英文版">
-    </a>
-    <br/>
-    <a href="https://github.com/Cairl/CS2-Font-Changer/releases/latest/download/zh_CN.exe">
-        <img src="https://img.shields.io/badge/下载-中文版本-red?style=for-the-badge&logo=windows" alt="下载中文版">
-    </a>
-</p>
+<p align="center"><a href="https://github.com/Cairl/CS2-Font-Changer/releases/latest/download/en_US.exe"><img src="https://img.shields.io/badge/下载-英文版本%20Version-blue?style=for-the-badge&logo=windows" alt="下载英文版"></a>　　<a href="https://github.com/Cairl/CS2-Font-Changer/releases/latest/download/zh_CN.exe"><img src="https://img.shields.io/badge/下载-中文版本%20Version-red?style=for-the-badge&logo=windows" alt="下载中文版"></a></p>
 
 ## 🚀 快速开始
 
