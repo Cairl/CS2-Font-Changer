@@ -52,16 +52,12 @@ CS2 字体更改器让您能够轻松自定义 Counter-Strike 2 游戏内的字�
 
 ## 📸 效果展示
 
-<table>
-  <tr>
-    <td><img src="/pic/startpage.png" alt="开始页面"></td>
-    <td><img src="/pic/ranking.png" alt="排名页面"></td>
-  </tr>
-  <tr>
-    <td><img src="/pic/loading.png" alt="加载界面"></td>
-    <td><img src="/pic/ingame.png" alt="游戏内画面"></td>
-  </tr>
-</table>
+![zh - 1](https://github.com/user-attachments/assets/cd3fccb6-aa4e-4f3f-8057-83a0d28fa584)
+![zh - 2](https://github.com/user-attachments/assets/645a961b-9cdf-4341-8dd5-9d842566a5b3)
+![zh - 3](https://github.com/user-attachments/assets/f43eb585-31b3-4790-9d2e-866e7261823d)
+![zh - 4](https://github.com/user-attachments/assets/a264d3a0-8779-495f-b4da-e77e1e1baed8)
+![zh - 5](https://github.com/user-attachments/assets/ef8ae86d-7f10-4825-9e1b-fcd9f3f92fd9)
+![zh - 6](https://github.com/user-attachments/assets/0880c845-dbfb-42a9-9d20-1b2044a5c38a)
 
 ## ⚠️ 注意事项
 
