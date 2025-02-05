@@ -59,7 +59,6 @@ CS2 Font Changer allows you to customize your Counter-Strike 2 gaming experience
 ![en - 5](https://github.com/user-attachments/assets/2a3f0ca8-9d66-4b80-a35f-ab4e8a7405d3)
 ![en - 6](https://github.com/user-attachments/assets/e013f9dd-1e24-4d6a-a281-d79cba4aea72)
 
-
 ## ⚠️ Important Notes
 
 > [!IMPORTANT]
