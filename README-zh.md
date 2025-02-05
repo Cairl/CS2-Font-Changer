@@ -44,7 +44,7 @@ CS2 字体更改器让您能够轻松自定义 Counter-Strike 2 游戏内的字�
 
 ## 📸 效果展示
 
-> 声明：演示中使用的字体来自 [zpix-pixel-font](https://github.com/SolidZORO/zpix-pixel-font)
+> **声明**：演示中使用的字体来自 [zpix-pixel-font](https://github.com/SolidZORO/zpix-pixel-font)
 
 ![zh - 1](https://github.com/user-attachments/assets/cd3fccb6-aa4e-4f3f-8057-83a0d28fa584)
 ![zh - 2](https://github.com/user-attachments/assets/645a961b-9cdf-4341-8dd5-9d842566a5b3)
