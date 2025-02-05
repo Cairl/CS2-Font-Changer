@@ -12,7 +12,7 @@
     </p>
     <p>
         <a href="/README.md"><strong>English</strong></a> | 
-        <a href="/README-zh.md">简体中文</a>
+        <a href="/README-zh.md">中文</a>
     </p>
     <img src="/pic/demo.gif" alt="Demo" width="600">
 </div>
