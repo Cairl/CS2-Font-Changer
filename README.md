@@ -19,7 +19,7 @@
 
 ## 🎮 Overview
 
-CS2 Font Changer allows you to customize your Counter-Strike 2 gaming experience by easily changing in-game fonts. Whether you want better readability or a more personalized look, our tool makes it simple and safe.
+CS2 Font Changer allows you to customize your Counter-Strike 2 gaming experience by easily changing in-game fonts. Whether you want better readability or a more personalized look, this tool makes it simple and safe.
 
 ## ⭐ Key Features
 
@@ -66,7 +66,7 @@ CS2 Font Changer allows you to customize your Counter-Strike 2 gaming experience
 ## ⚠️ Important Notes
 
 > [!IMPORTANT]
-> - Always backup your game files before making changes
+> - Installing a new font will replace all existing in-game fonts
 > - Use Steam's "Verify integrity of game files" to restore defaults
 > - Compatible with most modern TrueType (.ttf) and OpenType (.otf) fonts
 
