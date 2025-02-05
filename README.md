@@ -36,7 +36,7 @@ CS2 Font Changer allows you to customize your Counter-Strike 2 gaming experience
     <a href="https://github.com/Cairl/CS2-Font-Changer/releases/latest/download/en_US.exe">
         <img src="https://img.shields.io/badge/Download-English%20Version-blue?style=for-the-badge&logo=windows" alt="Download English Version">
     </a>
-    <br/>
+    <img width="20" />
     <a href="https://github.com/Cairl/CS2-Font-Changer/releases/latest/download/zh_CN.exe">
         <img src="https://img.shields.io/badge/Download-Chinese%20Version-red?style=for-the-badge&logo=windows" alt="Download Chinese Version">
     </a>
