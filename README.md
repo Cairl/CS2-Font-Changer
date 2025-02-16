@@ -44,7 +44,7 @@ CS2 Font Changer allows you to customize your Counter-Strike 2 gaming experience
 
 ## 📸 Screenshots
 
-> **Notice**: The font used in the demo is from [zpix-pixel-font](https://github.com/SolidZORO/zpix-pixel-font)
+> **Notice**: The font used in the demo is from [ChillBitmap](https://github.com/Warren2060/ChillBitmap)
 
 ![en - 1](https://github.com/user-attachments/assets/cb28df40-cb87-4b0f-8f2c-9143fb253e6d)
 ![en - 2](https://github.com/user-attachments/assets/c377f364-09dc-4064-ae5b-37af5b8ba76f)
