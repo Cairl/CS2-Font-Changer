@@ -78,5 +78,4 @@ Your contributions make this project better! Feel free to:
     <br/>
     Made with ❤️ by <a href="https://github.com/Cairl">Cairl</a>
     <br/>
-    Last Updated: 2025-02-18
 </div>
