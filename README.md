@@ -11,7 +11,7 @@
         <img src="https://img.shields.io/github/stars/Cairl/CS2-Font-Changer?style=social" alt="Stars">
     </p>
     <p>
-        <a href="/README.md"><strong>English</strong></a> | 
+        <b>English</b> | 
         <a href="/说明.md">中文</a>
     </p>
     <img src="/pic/demo.gif" alt="Demo" width="600">
