@@ -2,155 +2,112 @@ import sys
 import winreg
 import os
 import shutil
+import msvcrt
+import subprocess
 from fontTools.ttLib import TTFont
+import tkinter as tk
+from tkinter import filedialog
+import zipfile
 
-def verify_files(csgo_fonts, font_name):
-	"""验证文件是否正确安装"""
-	font_file = os.path.join(csgo_fonts, f"{font_name}.ttf")
-	conf_file = os.path.join(csgo_fonts, 'fonts.conf')
-	
-	print('\n[验证] 正在检查文件...')
-	if not os.path.exists(font_file):
-		print(f'\n[错误] 字体文件未成功复制: {font_file}')
-		return False
-	if not os.path.exists(conf_file):
-		print(f'\n[错误] 配置文件未成功创建: {conf_file}')
-		return False
-	if os.path.getsize(font_file) == 0:
-		print(f'\n[错误] 字体文件大小为0: {font_file}')
-		return False
-	
-	print('\n[成功] 文件验证通过')
-	return True
+class Logger(object):
+	def __init__(self):
+		self.terminal = sys.stdout
+		self.log = []
 
-# 游戏安装路径输入与验证
-while True:
-	os.system('cls')
-	print('\nCS2 字体更改器v2.0 | 作者: Cairl')
-	print('\n-  -  -  -  -  -  -  -  -  -  -')
+	def write(self, message):
+		self.terminal.write(message)
+		self.log.append(message)
 
-	# 检查输入的字体文件是否有效
-	input_file = sys.argv[1] if len(sys.argv) == 2 else None
-	if not input_file or not input_file.endswith(('.ttf', '.otf')) or not os.path.isfile(input_file):
-		input('\n[错误] 输入文件无效！请提供有效的 .ttf 或 .otf 字体文件。')
-		sys.exit(1)
+	def flush(self):
+		self.terminal.flush()
 
+	def get_logs(self):
+		# 过滤掉 ANSI 转义序列
+		import re
+		ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+		return ansi_escape.sub('', "".join(self.log))
+
+	def clear(self):
+		"""清空日志缓冲区"""
+		self.log = []
+
+# 初始化日志记录器
+sys_logger = Logger()
+sys.stdout = sys_logger
+
+def copy_to_clipboard(text):
+	"""将文本复制到剪贴板"""
 	try:
-		font = TTFont(input_file)
-		font_name = next((record.toUnicode().strip() 
-			for record in font['name'].names 
-			if record.nameID == 1 and record.platformID == 3), None)
-		if font_name is None:
-			raise Exception("无法读取字体名称")
-		print(f'\n[信息] 成功读取字体名称: {font_name}')
-	except Exception as e:
-		input(f'\n[错误] "{os.path.basename(input_file)}" 是不受支持的字体集。{str(e)}')
-		sys.exit(1)
+		# 使用 Windows 自带的 clip 命令
+		# 注意：clip 命令在接收管道输入时可能存在编码问题，这里强制使用 utf-8 编码
+		process = subprocess.Popen(['clip'], stdin=subprocess.PIPE, text=False)
+		process.communicate(input=text.encode('gbk', errors='ignore'))
+	except Exception:
+		pass
 
-# 获取注册表中的游戏安装路径
-	try:
-		key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 730')
-		install_location = winreg.QueryValueEx(key, 'InstallLocation')[0]
-	except FileNotFoundError:
-		install_location = None
+def normalize_path(path):
+	return path.replace('/', '\\') if path else None
 
-	# 验证游戏路径的有效性
-	if install_location:
-		print('\n[信息] 检测到游戏安装路径：')
-		print(install_location)
-		print('\n按回车键确认使用该路径，或输入新的路径：')
-	else:
-		print('\n[错误] 未检测到游戏安装路径！请手动输入有效路径：')
-	
-	user_input = input().strip('"')
-
-	# 处理用户输入的路径
-	if user_input:
-		if os.path.exists(user_input) and user_input.endswith('Counter-Strike Global Offensive'):
-			install_location = user_input
+def wait_for_enter(prompt):
+	print(prompt, end='', flush=True)
+	while True:
+		if msvcrt.getch() in [b'\r', b'\n']:
+			sys.stdout.write('\n')
 			break
-		else:
-			input('\n[错误] 路径无效！请确保路径以 "Counter-Strike Global Offensive" 文件夹为结尾。按回车键重新输入路径。')
-	else:
-		if install_location:
-			break
-		else:
-			input('\n[错误] 未提供有效路径！按回车键重新输入路径。')
+	print()
 
-# 构造目标路径
-csgo_fonts = os.path.join(install_location, 'game', 'csgo', 'panorama', 'fonts')
-core_fonts = os.path.join(install_location, 'game', 'core', 'panorama', 'fonts', 'conf.d')
+def select_file_dialog(title, filetypes):
+	root = tk.Tk()
+	root.withdraw()
+	root.attributes('-topmost', True)
+	res = filedialog.askopenfilename(title=title, filetypes=filetypes)
+	root.destroy()
+	return normalize_path(res)
 
-# 检查目录
-if not os.path.exists(csgo_fonts):
-	print(f'\n[错误] 字体目录不存在: {csgo_fonts}')
-	os.makedirs(csgo_fonts, exist_ok=True)
-	print('\n[信息] 已创建字体目录')
+def select_dir_dialog(title):
+	root = tk.Tk()
+	root.withdraw()
+	root.attributes('-topmost', True)
+	res = filedialog.askdirectory(title=title)
+	root.destroy()
+	return normalize_path(res)
 
-if not os.path.exists(core_fonts):
-	print(f'\n[错误] 核心字体目录不存在: {core_fonts}')
-	os.makedirs(core_fonts, exist_ok=True)
-	print('\n[信息] 已创建核心字体目录')
+def is_valid_install_location(path):
+	return bool(path) and os.path.exists(path) and path.endswith('Counter-Strike Global Offensive')
 
-ui_font = os.path.join(csgo_fonts, 'stratum2.uifont')
+def get_fonts_paths(install_location):
+	csgo_fonts = os.path.join(install_location, 'game', 'csgo', 'panorama', 'fonts')
+	core_fonts = os.path.join(install_location, 'game', 'core', 'panorama', 'fonts', 'conf.d')
+	ui_font = os.path.join(csgo_fonts, 'stratum2.uifont')
+	return csgo_fonts, core_fonts, ui_font
 
-# 删除现有字体文件
-if os.path.exists(ui_font):
-	try:
-		os.remove(ui_font)
-		print('\n[信息] 已删除现有UI字体文件')
-	except Exception as e:
-		print(f'\n[警告] 删除UI字体文件失败: {str(e)}')
+def ensure_directory(path, missing_msg, created_msg):
+	if not os.path.exists(path):
+		print(missing_msg)
+		os.makedirs(path, exist_ok=True)
+		print(created_msg)
 
-for file in os.listdir(csgo_fonts):
-	if file.endswith('.ttf'):
+def remove_existing_fonts(csgo_fonts, ui_font, ui_msg, ui_err_msg, ttf_msg_format, ttf_err_msg_format):
+	if os.path.exists(ui_font):
 		try:
-			os.remove(os.path.join(csgo_fonts, file))
-			print(f'\n[信息] 已删除字体文件: {file}')
+			os.remove(ui_font)
+			print(ui_msg)
 		except Exception as e:
-			print(f'\n[警告] 删除字体文件失败: {file} - {str(e)}')
+			print_error(ui_err_msg, e)
+	for file in os.listdir(csgo_fonts):
+		if file.endswith('.ttf'):
+			try:
+				os.remove(os.path.join(csgo_fonts, file))
+				print(ttf_msg_format.format(file=file))
+			except Exception as e:
+				print_error(ttf_err_msg_format.format(file=file), e)
 
-# 复制新字体文件
-try:
-	safe_font_name = font_name  # 用于配置文件中的字体名称
-	shutil.copy(input_file, os.path.join(csgo_fonts, f"{font_name}.ttf"))
-	print(f'\n[信息] 已复制新字体文件: {font_name}.ttf')
-except Exception as e:
-	print(f'\n[错误] 复制字体文件失败: {str(e)}')
-	sys.exit(1)
-
-# 写入配置文件
-try:
-	with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w', encoding='utf-8') as f:
-		f.write(f"""<?xml version='1.0'?>
+def write_fonts_conf(csgo_fonts, safe_font_name, ui_scale, success_msg, error_msg):
+	try:
+		with open(os.path.join(csgo_fonts, 'fonts.conf'), 'w', encoding='utf-8') as f:
+			f.write(f"""<?xml version='1.0'?>
 <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
 <fontconfig>
-
-	<!-- Choose an OS Rendering Style.  This will determine B/W, grayscale,
-		or subpixel antialising and slight, full or no hinting and replacements (if set in next option) -->
-	<!-- Style should also be set in the infinality-settings.sh file, ususally in /etc/profile.d/ -->
-
-	<!-- Choose one of these options:
-		Infinality	  - subpixel AA, minimal replacements/tweaks, sans=Arial
-		Windows 7	  - subpixel AA, sans=Arial
-		Windows XP	  - subpixel AA, sans=Arial
-		Windows 98	  - B/W full hinting on TT fonts, grayscale AA for others, sans=Arial
-		OSX			  - Slight hinting, subpixel AA, sans=Helvetica Neue
-		OSX2		  - No hinting, subpixel AA, sans=Helvetica Neue
-		Linux		  - subpixel AA, sans=DejaVu Sans
-
-	=== Recommended Setup ===
-	Run ./infctl.sh script located in the current directory to set the style.
-	
-	# ./infctl.sh setstyle
-	
-	=== Manual Setup ===
-	See the infinality/styles.conf.avail/ directory for all options.  To enable 
-	a different style, remove the symlink "conf.d" and link to another style:
-	
-	# rm conf.d
-	# ln -s styles.conf.avail/win7 conf.d
-	-->
 
 	<dir prefix="default">../../csgo/panorama/fonts</dir>
 	<dir>WINDOWSFONTDIR</dir>
@@ -159,7 +116,6 @@ try:
 	<dir>/usr/local/share/fonts</dir>
 	<dir prefix="xdg">fonts</dir>
 
-	<!-- A fontpattern is a font file name, not a font name.  Be aware of filenames across all platforms! -->
 	<fontpattern>Arial</fontpattern>
 	<fontpattern>.uifont</fontpattern>
 	<fontpattern>notosans</fontpattern>
@@ -172,53 +128,7 @@ try:
 	<cachedir>WINDOWSTEMPDIR_FONTCONFIG_CACHE</cachedir>
 	<cachedir>~/.fontconfig</cachedir>
 
-	<!-- Uncomment this to reject all bitmap fonts -->
-	<!-- Make sure to run this as root if having problems:  fc-cache -f -->
-	<!--
-	<selectfont>
-		<rejectfont>
-			<pattern>
-				<patelt name="scalable" >
-					<bool>false</bool>
-				</patelt>
-			</pattern>
-		</rejectfont>
-	</selectfont>
-	-->
-
-	<!-- THESE RULES RELATE TO THE OLD MONODIGIT FONTS, TO BE REMOVED ONCE ALL REFERENCES TO THEM HAVE GONE. -->
-	<!-- The Stratum2 Monodigit fonts just supply the monospaced digits -->
-	<!-- All other characters should come from ordinary Stratum2 -->
-	<match>
-		<test name="family">
-			<string>Stratum2 Bold Monodigit</string>
-		</test>
-		<edit name="family" mode="append" binding="strong">
-			<string>Stratum2</string>
-		</edit>
-		<edit name="style" mode="assign" binding="strong">
-			<string>Bold</string>
-		</edit>
-	</match>
-
-	<match>
-		<test name="family">
-			<string>Stratum2 Regular Monodigit</string>
-		</test>
-		<edit name="family" mode="append" binding="strong">
-			<string>Stratum2</string>
-		</edit>
-		<edit name="weight" mode="assign" binding="strong">
-			<string>Regular</string>
-		</edit>
-	</match>
-
-	<!-- Stratum2 only contains a subset of the Vietnamese alphabet. -->
-	<!-- So when language is set to Vietnamese, replace Stratum with Noto. -->
-	<!-- Exceptions are Mono and TF fonts. -->
-	<!-- Ensure we pick an Italic/Bold version of Noto where appropriate. -->
-	<!-- Adjust size due to the Ascent value for Noto being significantly larger than Stratum. -->
-	<!-- Adjust size even smaller for condensed fonts.-->
+	<!-- Vietnamese language support -->
 	<match>
 		<test name="lang">
 			<string>vi-vn</string>
@@ -282,88 +192,6 @@ try:
 		</edit>
 	</match>
 
-	<!-- More Vietnamese... -->
-	<!-- In some cases (hud health, ammo, money) we want to force Stratum to be used. -->
-	<match>
-		<test name="lang">
-			<string>vi-vn</string>
-		</test>
-		<test name="family">
-			<string>ForceStratum2</string>
-		</test>
-		<edit name="family" mode="assign" binding="same">
-			<string>Stratum2</string>
-		</edit>
-	</match>
-
-	<!-- Fallback font sizes. -->
-	<!-- If we request Stratum, but end up with Arial, reduce the pixelsize because Arial glyphs are larger than Stratum. -->
-	<match target="font">
-		<test name="family" target="pattern" compare="contains">
-			<string>Stratum2</string>
-		</test>
-		<test name="family" target="font" compare="contains">
-			<string>Arial</string>
-		</test>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>0.9</double>
-			</times>
-		</edit>
-	</match>
-
-	<!-- If we request Stratum, but end up with Noto, reduce the pixelsize. -->
-	<!-- This fixes alignment issues due to the Ascent value for Noto being significantly larger than Stratum. -->
-	<match target="font">
-		<test name="family" target="pattern" compare="contains">
-			<string>Stratum2</string>
-		</test>
-		<test name="family" target="font" compare="contains">
-			<string>Noto</string>
-		</test>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>0.9</double>
-			</times>
-		</edit>
-	</match>
-
-	<!-- Stratum contains a set of arrow symbols in place of certain greek/mathematical characters - presumably for some historical reason, possibly used by VGUI somewhere?. -->
-	<!-- For panorama these Stratum characters should be ignored and picked up from a fallback font instead. -->
-	<!-- Update for new source2 versions of Stratum, exclude all four of the greek characters which are included in the new Stratum fonts (sometimes as arrows, sometimes not). Best to fallback in all cases to Arial. -->
-	<match target="scan">
-		<test name="family">
-			<string>Stratum2</string> <!-- This matches all the source2 Stratum fonts except the mono versions -->
-		</test>
-		<edit name="charset" mode="assign">
-			<minus>
-				<name>charset</name>
-				<charset>
-					<int>0x0394</int> <!-- greek delta -->
-					<int>0x03A9</int> <!-- greek omega -->
-					<int>0x03BC</int> <!-- greek mu -->
-					<int>0x03C0</int> <!-- greek pi -->
-					<int>0x2202</int> <!-- partial diff -->
-					<int>0x2206</int> <!-- delta -->
-					<int>0x220F</int> <!-- product -->
-					<int>0x2211</int> <!-- sum -->
-					<int>0x221A</int> <!-- square root -->
-					<int>0x221E</int> <!-- infinity -->
-					<int>0x222B</int> <!-- integral -->
-					<int>0x2248</int> <!-- approxequal -->
-					<int>0x2260</int> <!-- notequal -->
-					<int>0x2264</int> <!-- lessequal -->
-					<int>0x2265</int> <!-- greaterequal -->
-					<int>0x25CA</int> <!-- lozenge -->
-				</charset>
-			</minus>
-		</edit>
-	</match>
-
-	<!-- Ban Type-1 fonts because they render poorly --> 
-	<!-- Comment this out to allow all Type 1 fonts -->
 	<selectfont> 
 		<rejectfont> 
 			<pattern> 
@@ -374,82 +202,55 @@ try:
 		</rejectfont> 
 	</selectfont> 
 
-	<!-- Globally use embedded bitmaps in fonts like Calibri? -->
 	<match target="font" >
 		<edit name="embeddedbitmap" mode="assign">
 			<bool>false</bool>
 		</edit>
 	</match>
 
-	<!-- Substitute truetype fonts in place of bitmap ones? -->
 	<match target="pattern" >
 		<edit name="prefer_outline" mode="assign">
 			<bool>true</bool>
 		</edit>
 	</match>
 
-	<!-- Do font substitutions for the set style? -->
-	<!-- NOTE: Custom substitutions in 42-repl-global.conf will still be done -->
-	<!-- NOTE: Corrective substitutions will still be done -->
 	<match target="pattern" >
 		<edit name="do_substitutions" mode="assign">
 			<bool>true</bool>
 		</edit>
 	</match>
 
-	<!-- Make (some) monospace/coding TTF fonts render as bitmaps? -->
-	<!-- courier new, andale mono, monaco, etc. -->
-	<match target="pattern" >
-		<edit name="bitmap_monospace" mode="assign">
-			<bool>false</bool>
-		</edit>
-	</match>
-
-	<!-- Force autohint always -->
-	<!-- Useful for debugging and for free software purists -->
 	<match target="font">
 		<edit name="force_autohint" mode="assign">
 			<bool>false</bool>
 		</edit>
 	</match>
 
-	<!-- Set DPI.  dpi should be set in ~/.Xresources to 96 -->
-	<!-- Setting to 72 here makes the px to pt conversions work better (Chrome) -->
-	<!-- Some may need to set this to 96 though -->
-	<match target="pattern">
-		<edit name="dpi" mode="assign">
-			<double>96</double>
-		</edit>
-	</match>
-	
-	<!-- Use Qt subpixel positioning on autohinted fonts? -->
-	<!-- This only applies to Qt and autohinted fonts. Qt determines subpixel positioning based on hintslight vs. hintfull, -->
-	<!--   however infinality patches force slight hinting inside freetype, so this essentially just fakes out Qt. -->
-	<!-- Should only be set to true if you are not doing any stem alignment or fitting in environment variables -->
-	<match target="pattern" >
-		<edit name="qt_use_subpixel_positioning" mode="assign">
-			<bool>false</bool>
-		</edit>
-	</match>
-
-	<!-- Run infctl.sh or change the symlink in current directory instead of modifying this -->
 	<include>../../../core/panorama/fonts/conf.d</include>
+
+	<!-- 调整 HUD 字体大小 (金钱、血量、弹药) -->
+	<match target="font">
+		<test name="family" compare="contains">
+			<string>Stratum2</string>
+		</test>
+		<test name="family" compare="contains">
+			<string>{safe_font_name}</string>
+		</test>
+		<edit name="pixelsize" mode="assign">
+			<times>
+				<name>pixelsize</name>
+				<double>{ui_scale}</double>
+			</times>
+		</edit>
+	</match>
 	
 	<!-- Custom fonts -->
-	<!-- Edit every occurency with your font name (NOT the font file name) -->
-	
 	<match>
 		<test name="family">
 			<string>Stratum2</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
 			<string>{safe_font_name}</string>
-		</edit>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>1</double>
-			</times>
 		</edit>
 	</match>
 	
@@ -460,12 +261,6 @@ try:
 		<edit name="family" mode="append" binding="strong">
 			<string>{safe_font_name}</string>
 		</edit>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>1</double>
-			</times>
-		</edit>
 	</match>
 	
 	<match>
@@ -474,12 +269,6 @@ try:
 		</test>
 		<edit name="family" mode="append" binding="strong">
 			<string>{safe_font_name}</string>
-		</edit>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>1</double>
-			</times>
 		</edit>
 	</match>
 	
@@ -490,12 +279,6 @@ try:
 		<edit name="family" mode="append" binding="strong">
 			<string>{safe_font_name}</string>
 		</edit>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>1</double>
-			</times>
-		</edit>
 	</match>
 	
 	<match>
@@ -505,31 +288,14 @@ try:
 		<edit name="family" mode="append" binding="strong">
 			<string>{safe_font_name}</string>
 		</edit>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>1</double>
-			</times>
-		</edit>
 	</match>
 
-	<!-- And here's the thing... -->
-	<!-- CSGO devs decided to fallback to "notosans" on characters not supplied with "Stratum2" - the font we're trying to replace -->
-	<!-- "notosans" or "Noto" is used i.e. on Vietnamese characters - but also on some labels that should be using "Stratum2" or even Arial -->
-	<!-- I can't do much about it right now. If you're Vietnamese or something, just delete this <match> closure. -->
-	<!-- Some labels (i.e. icon tooltips in menu) won't be using your custom font -->
 	<match>
 		<test name="family">
 			<string>notosans</string>
 		</test>
 		<edit name="family" mode="append" binding="strong">
 			<string>{safe_font_name}</string>
-		</edit>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>1</double>
-			</times>
 		</edit>
 	</match>
 	
@@ -540,12 +306,6 @@ try:
 		<edit name="family" mode="append" binding="strong">
 			<string>{safe_font_name}</string>
 		</edit>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>1</double>
-			</times>
-		</edit>
 	</match>
 	
 	<match>
@@ -554,12 +314,6 @@ try:
 		</test>
 		<edit name="family" mode="append" binding="strong">
 			<string>{safe_font_name}</string>
-		</edit>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>1</double>
-			</times>
 		</edit>
 	</match>
 
@@ -570,190 +324,408 @@ try:
 		<edit name="family" mode="append" binding="strong">
 			<string>{safe_font_name}</string>
 		</edit>
-		<edit name="pixelsize" mode="assign">
-			<times>
-				<name>pixelsize</name>
-				<double>1</double>
-			</times>
-		</edit>
 	</match>
 
 </fontconfig>""")
-	print('\n[信息] 已写入 fonts.conf 配置文件')
-except Exception as e:
-	print(f'\n[错误] 写入 fonts.conf 失败: {str(e)}')
+		print(success_msg)
+	except Exception as e:
+		print_error(error_msg, e)
 
-try:
-	with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w', encoding='utf-8') as f:
-		f.write(f"""<?xml version='1.0'?>
+def write_repl_conf(core_fonts, safe_font_name, ui_scale, success_msg, error_msg):
+	try:
+		with open(os.path.join(core_fonts, '42-repl-global.conf'), 'w', encoding='utf-8') as f:
+			f.write(f"""<?xml version='1.0'?>
 <!DOCTYPE fontconfig SYSTEM 'fonts.dtd'>
 <fontconfig>
 
-	<!-- ##Style: common -->
-
-	<!-- Global Replacements - Active if set to true above -->
-	<!-- Add your own replacements here -->
-	<!-- Clone "match" blocks below for each replacement -->
 	<match target="font">
-		<test name="family">
-			<string>Stratum2</string>
-		</test>
-		<edit name="family" mode="assign">
-			<string>{safe_font_name}</string>
+		<test name="family" compare="contains"><string>Stratum2</string></test>
+		<edit name="pixelsize" mode="assign">
+			<times><name>pixelsize</name><double>{ui_scale}</double></times>
 		</edit>
+	</match>
+	<match target="font">
+		<test name="family" compare="contains"><string>{safe_font_name}</string></test>
+		<edit name="pixelsize" mode="assign">
+			<times><name>pixelsize</name><double>{ui_scale}</double></times>
+		</edit>
+	</match>
+""")
+		fonts_to_replace = ['Stratum2', 'Stratum2 Bold', 'Arial', 'Times New Roman', 'Courier New', 'notosans', 'notoserif', 'notomono-regular', 'noto']
+		for font_to_repl in fonts_to_replace:
+			f.write(f"""
+	<match target="font">
+		<test name="family"><string>{font_to_repl}</string></test>
+		<edit name="family" mode="assign"><string>{safe_font_name}</string></edit>
 	</match>
 	<match target="pattern">
-		<test name="family">
-			<string>Stratum2</string>
-		</test>
-		<edit name="family" mode="prepend" binding="strong">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
+		<test name="family"><string>{font_to_repl}</string></test>
+		<edit name="family" mode="prepend" binding="strong"><string>{safe_font_name}</string></edit>
+	</match>""")
+		f.write("\n</fontconfig>")
+		print(success_msg)
+	except Exception as e:
+		print_error(error_msg, e)
 
-	<match target="font">
-		<test name="family">
-			<string>Stratum2 Bold</string>
-		</test>
-		<edit name="family" mode="assign">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-	<match target="pattern">
-		<test name="family">
-			<string>Stratum2 Bold</string>
-		</test>
-		<edit name="family" mode="prepend" binding="strong">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
+def read_menu_key(valid_keys, enter_label):
+	try:
+		while True:
+			char = msvcrt.getch()
+			if char in valid_keys:
+				if char in [b'\r', b'\n']:
+					sys.stdout.write(f'\033[92m[{enter_label}]\033[0m\n\n')
+					return ""
+				decoded_char = char.decode('utf-8')
+				sys.stdout.write(f'\033[92m{decoded_char}\033[0m\n\n')
+				return decoded_char.strip()
+	except:
+		return ""
 
-	<match target="font">
-		<test name="family">
-			<string>Arial</string>
-		</test>
-		<edit name="family" mode="assign">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-	<match target="pattern">
-		<test name="family">
-			<string>Arial</string>
-		</test>
-		<edit name="family" mode="prepend" binding="strong">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
+def get_auto_install_location():
+	try:
+		key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 730')
+		return winreg.QueryValueEx(key, 'InstallLocation')[0]
+	except FileNotFoundError:
+		return None
 
-	<match target="font">
-		<test name="family">
-			<string>Times New Roman</string>
-		</test>
-		<edit name="family" mode="assign">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-	<match target="pattern">
-		<test name="family">
-			<string>Times New Roman</string>
-		</test>
-		<edit name="family" mode="prepend" binding="strong">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
+def finish_execution(exit_code=0):
+	"""显示最终回显并根据用户选择执行操作"""
+	try:
+		print('\n运行任务已结束，按 [\033[92m回车键\033[0m] 复制执行日志至剪贴板，或直接关闭', end='', flush=True)
+		while True:
+			char = msvcrt.getch()
+			if char in [b'\r', b'\n']:
+				sys.stdout.write('\n')
+				copy_to_clipboard(sys_logger.get_logs())
+				print('日志已成功复制到剪贴板')
+				break
+	except (EOFError, KeyboardInterrupt):
+		pass
+	sys.exit(exit_code)
 
-	<match target="font">
-		<test name="family">
-			<string>Courier New</string>
-		</test>
-		<edit name="family" mode="assign">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-	<match target="pattern">
-		<test name="family">
-			<string>Courier New</string>
-		</test>
-		<edit name="family" mode="prepend" binding="strong">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
+def print_error(message, exception=None):
+	"""打印简要的错误信息"""
+	print(f'异常：{message}')
+	if exception:
+		print(f'诊断详情: {str(exception)}')
 
-	<match target="font">
-		<test name="family">
-			<string>notosans</string>
-		</test>
-		<edit name="family" mode="assign">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-	<match target="pattern">
-		<test name="family">
-			<string>notosans</string>
-		</test>
-		<edit name="family" mode="prepend" binding="strong">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-
-	<match target="font">
-		<test name="family">
-			<string>notoserif</string>
-		</test>
-		<edit name="family" mode="assign">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-	<match target="pattern">
-		<test name="family">
-			<string>notoserif</string>
-		</test>
-		<edit name="family" mode="prepend" binding="strong">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-
-	<match target="font">
-		<test name="family">
-			<string>notomono-regular</string>
-		</test>
-		<edit name="family" mode="assign">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-	<match target="pattern">
-		<test name="family">
-			<string>notomono-regular</string>
-		</test>
-		<edit name="family" mode="prepend" binding="strong">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-
-	<match target="font">
-		<test name="family">
-			<string>noto</string>
-		</test>
-		<edit name="family" mode="assign">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
-	<match target="pattern">
-		<test name="family">
-			<string>noto</string>
-		</test>
-		<edit name="family" mode="prepend" binding="strong">
-			<string>{safe_font_name}</string>
-		</edit>
-	</match>
+def verify_files(csgo_fonts, font_name):
+	"""验证文件是否正确安装"""
+	font_file = os.path.join(csgo_fonts, f"{font_name}.ttf")
+	conf_file = os.path.join(csgo_fonts, 'fonts.conf')
 	
-</fontconfig>""")
-	print('\n[信息] 已写入 42-repl-global.conf 配置文件')
-except Exception as e:
-	print(f'\n[错误] 写入 42-repl-global.conf 失败: {str(e)}')
+	print('正在对安装结果进行一致性校验')
+	if not os.path.exists(font_file):
+		print(f'校验失败：未能定位到目标字体文件 {font_file}')
+		return False
+	if not os.path.exists(conf_file):
+		print(f'校验失败：未能定位到必要的配置文件 {conf_file}')
+		return False
+	if os.path.getsize(font_file) == 0:
+		print(f'校验失败：目标字体文件大小异常（0 字节）')
+		return False
+	
+	print('校验完成，所有必要文件均已就绪')
+	return True
 
-# 验证安装
+def create_backup(install_location):
+	"""创建备份压缩包"""
+	backup_path = os.path.join(install_location, 'backup_original_fonts.zip')
+	
+	if os.path.exists(backup_path):
+		return # 备份已存在，说明已经进行过初次修改备份
+
+	print('正在备份')
+	csgo_fonts, core_fonts, _ = get_fonts_paths(install_location)
+	
+	try:
+		with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+			# 备份 csgo_fonts 目录
+			if os.path.exists(csgo_fonts):
+				for root, dirs, files in os.walk(csgo_fonts):
+					for file in files:
+						file_path = os.path.join(root, file)
+						arcname = os.path.join('csgo_fonts', os.path.relpath(file_path, csgo_fonts))
+						zf.write(file_path, arcname)
+			
+			# 备份 core_fonts 目录
+			if os.path.exists(core_fonts):
+				for root, dirs, files in os.walk(core_fonts):
+					for file in files:
+						file_path = os.path.join(root, file)
+						arcname = os.path.join('core_fonts', os.path.relpath(file_path, core_fonts))
+						zf.write(file_path, arcname)
+			
+		print(f'备份成功，\033[90m{backup_path}\033[0m')
+	except Exception as e:
+		print_error("备份失败", e)
+
+def restore_backup(install_location, backup_path_override=None):
+	"""从备份还原"""
+	backup_path = backup_path_override if backup_path_override else os.path.join(install_location, 'backup_original_fonts.zip')
+	
+	if not os.path.exists(backup_path):
+		print(f'未发现可用的备份文件：{backup_path}')
+		return False
+
+	print(f'正在从复原文件 {os.path.basename(backup_path)} 还原游戏初始字体')
+	csgo_fonts, core_fonts, _ = get_fonts_paths(install_location)
+
+	try:
+		# 还原前先清理
+		if os.path.exists(csgo_fonts):
+			for item in os.listdir(csgo_fonts):
+				item_path = os.path.join(csgo_fonts, item)
+				if os.path.isdir(item_path):
+					shutil.rmtree(item_path)
+				else:
+					os.remove(item_path)
+		
+		with zipfile.ZipFile(backup_path, 'r') as zf:
+			for item in zf.infolist():
+				if item.filename.startswith('csgo_fonts/'):
+					rel_path = item.filename[len('csgo_fonts/'):]
+					if not rel_path: continue
+					target_path = os.path.join(csgo_fonts, rel_path)
+					os.makedirs(os.path.dirname(target_path), exist_ok=True)
+					with zf.open(item) as source, open(target_path, 'wb') as target:
+						shutil.copyfileobj(source, target)
+				elif item.filename.startswith('core_fonts/'):
+					rel_path = item.filename[len('core_fonts/'):]
+					if not rel_path: continue
+					target_path = os.path.join(core_fonts, rel_path)
+					os.makedirs(os.path.dirname(target_path), exist_ok=True)
+					with zf.open(item) as source, open(target_path, 'wb') as target:
+						shutil.copyfileobj(source, target)
+		
+		# 特殊处理：如果 42-repl-global.conf 是我们创建的且备份里没有，应该删除它
+		repl_conf = os.path.join(core_fonts, '42-repl-global.conf')
+		with zipfile.ZipFile(backup_path, 'r') as zf:
+			if 'core_fonts/42-repl-global.conf' not in zf.namelist():
+				if os.path.exists(repl_conf):
+					os.remove(repl_conf)
+					print('已清理自定义配置')
+
+		print('还原完成')
+		return True
+	except Exception as e:
+		print_error("还原失败", e)
+		return False
+
+# 启用 ANSI 转义序列支持
+os.system('')
+
+def is_game_running():
+	"""检查 CS2 进程是否正在运行"""
+	try:
+		# 使用 tasklist 检查进程
+		output = subprocess.check_output('tasklist /FI "IMAGENAME eq cs2.exe" /NH', shell=True, stderr=subprocess.DEVNULL).decode('gbk', errors='ignore')
+		return 'cs2.exe' in output.lower()
+	except:
+		return False
+
+def get_font_name(file_path):
+	"""从字体文件中获取字体名称"""
+	try:
+		font = TTFont(file_path)
+		font_name = next((record.toUnicode().strip() 
+			for record in font['name'].names 
+			if record.nameID == 1 and record.platformID == 3), None)
+		return font_name
+	except Exception:
+		return None
+
+# 检查输入的参数
+input_file = sys.argv[1] if len(sys.argv) == 2 else None
+font_name = None
+
+if input_file and os.path.isfile(input_file):
+	# 处理自动还原逻辑
+	if os.path.basename(input_file).lower() == 'backup_original_fonts.zip':
+		print('\n检测到备份压缩包，准备执行自动还原')
+		# 尝试获取游戏安装路径
+		install_location = get_auto_install_location()
+		
+		if not install_location:
+			print('\n未能自动检测到游戏安装路径，请手动进行选择')
+			install_location = select_dir_dialog("选择 Counter-Strike Global Offensive 文件夹以进行还原")
+		
+		if is_valid_install_location(install_location):
+			if restore_backup(install_location, input_file):
+				finish_execution(0)
+			else:
+				input('\n还原程序执行失败，请按回车键退出')
+				finish_execution(1)
+		else:
+			input('\n指定的路径无效或未选择任何目录，请按回车键退出')
+			finish_execution(1)
+
+	# 处理字体文件
+	if input_file.endswith(('.ttf', '.otf')):
+		font_name = get_font_name(input_file)
+		if not font_name:
+			print_error(f'"{os.path.basename(input_file)}" 是不受支持的字体集')
+			input('\n请将以上错误详情发送给开发者排查，按回车键退出程序')
+			finish_execution(1)
+
+# 尝试获取注册表中的游戏安装路径
+auto_install_location = get_auto_install_location()
+
+# 初始化安装位置为自动识别的位置
+install_location = auto_install_location
+
+# 初始化缩放倍率
+ui_scale = 1.0
+
+# 游戏安装路径输入与验证
+while True:
+	# 清屏以保持菜单整洁
+	os.system('cls' if os.name == 'nt' else 'clear')
+	sys_logger.clear()  # 每次重绘菜单前清空日志，确保复制的日志只有最后一次状态
+	
+	print("CS2 字体更改器 v3.0 | 作者: Cairl\n")
+
+	if is_game_running():
+		print('\033[93m注意：检测到 Counter-Strike 2 正在运行，可能会影响字体替换效果，建议先关闭游戏再进行操作\033[0m')
+
+	# 1. 游戏路径与备份检测
+	has_backup = False
+	if install_location:
+		backup_path = os.path.join(install_location, 'backup_original_fonts.zip')
+		has_backup = os.path.exists(backup_path)
+
+	# 2. 菜单显示逻辑
+	can_start = bool(input_file) and is_valid_install_location(install_location)
+	print(f"\033[96m•\033[0m 按 [\033[92m1\033[0m] {'重新导入字体' if input_file else '选择导入字体'}，当前：\033[90m{font_name or '未选择'}\033[0m")
+	print(f"\033[96m•\033[0m 按 [\033[92m2\033[0m] 选择游戏路径，当前：\033[90m{install_location or '未识别'}\033[0m")
+	print(f"\033[96m•\033[0m 按 [\033[92m3\033[0m] 调整 UI 缩放，当前：\033[90m{ui_scale}\033[0m")
+	if has_backup:
+		print(f"\033[96m•\033[0m 按 [\033[92m0\033[0m] 恢复默认字体，注意：程序首次运行时会在游戏根目录自动创建恢复文件，恢复操作需要该文件存在")
+	if can_start:
+		print(f"\n\033[96m•\033[0m 按 [\033[92m回车键\033[0m] 开始替换字体")
+	
+	sys.stdout.write('\n> ')
+	sys.stdout.flush()
+	
+	valid_keys = [b'1', b'2', b'3']
+	if has_backup:
+		valid_keys.append(b'0')
+	if can_start:
+		valid_keys.extend([b'\r', b'\n'])
+
+	user_input = read_menu_key(valid_keys, "回车键")
+	
+	sys.stdout.flush()
+
+	if user_input == '1':
+		selected_file = select_file_dialog(
+			"选择字体或恢复文件",
+			[("支持的文件", "*.ttf;*.otf;*.zip"), ("字体文件", "*.ttf;*.otf"), ("恢复文件", "backup_original_fonts.zip")]
+		)
+		if selected_file:
+			input_file = selected_file
+			if input_file.lower().endswith('.zip'):
+				if os.path.basename(input_file) == 'backup_original_fonts.zip':
+					font_name = "恢复文件 (ZIP)"
+				else:
+					print_error(f'所选 ZIP 文件名称不正确，应为 "backup_original_fonts.zip"')
+					input_file = None
+					wait_for_enter('请按回车键返回主菜单')
+			else:
+				font_name = get_font_name(input_file)
+				if not font_name:
+					print_error(f'所选文件 "{os.path.basename(input_file)}" 并非有效的字体格式')
+					input_file = None
+					wait_for_enter('请按回车键返回主菜单')
+		continue
+
+	elif user_input == '2':
+		selected_path = select_dir_dialog("选择 Counter-Strike Global Offensive 文件夹")
+		if selected_path:
+			install_location = selected_path
+		else:
+			continue
+
+	elif user_input == '3':
+		while True:
+			try:
+				val = input('\033[93m•\033[0m 输入 UI 缩放倍率（推荐区间 0.9 至 1.1）：')
+				if not val: break
+				ui_scale = float(val)
+				print()
+				break
+			except ValueError:
+				print('请输入合法的数值')
+		continue
+
+	elif user_input == '0' and has_backup:
+		# 恢复备份逻辑保持不变，但提示语更新
+		if not install_location:
+			print('执行还原程序前，请先指定游戏的安装路径')
+			selected_path = select_dir_dialog("选择 Counter-Strike Global Offensive 文件夹以进行还原")
+			if selected_path:
+				install_location = selected_path
+			else:
+				input('操作已取消，按回车键返回')
+				continue
+		
+		if is_valid_install_location(install_location):
+			if restore_backup(install_location):
+				finish_execution(0)
+			else:
+				input('还原失败，按回车键返回主菜单尝试手动处理')
+				continue
+		else:
+			input('指定的路径无效，请确保选择了正确的游戏根目录')
+			continue
+
+	elif user_input == "":
+		# 空输入按回车即开始操作
+		if not input_file:
+			input('尚未加载字体源文件，无法执行配置，请先按 1 导入字体')
+			continue
+		if not is_valid_install_location(install_location):
+			input('游戏路径配置不正确或尚未设定，请先确认路径信息')
+			continue
+		
+		# 验证通过，创建备份并跳出循环开始执行
+		create_backup(install_location)
+		break
+
+	else:
+		input('未能识别的指令，请按回车键刷新菜单')
+		continue
+
+# 构造目标路径
+csgo_fonts, core_fonts, ui_font = get_fonts_paths(install_location)
+
+ensure_directory(csgo_fonts, f'字体目录缺失：{csgo_fonts}', '已自动创建字体目录')
+ensure_directory(core_fonts, f'核心配置目录缺失：{core_fonts}', '已自动创建核心配置目录')
+
+remove_existing_fonts(
+	csgo_fonts,
+	ui_font,
+	'正在清理旧版本的 UI 字体索引文件',
+	'清理旧版本 UI 字体索引失败',
+	'正在移除冲突的旧字体文件：{file}',
+	'移除旧字体文件失败: {file}'
+)
+
+# 复制新字体文件
+try:
+	safe_font_name = font_name  # 配置文件中使用的字体名
+	shutil.copy(input_file, os.path.join(csgo_fonts, f"{font_name}.ttf"))
+	print(f'已将新字体文件部署至目标路径：{font_name}.ttf')
+except Exception as e:
+	print_error("部署字体文件失败", e)
+	finish_execution(1)
+
+write_fonts_conf(csgo_fonts, safe_font_name, ui_scale, '\n正在生成局部字体配置文件：fonts.conf', '生成 fonts.conf 失败')
+write_repl_conf(core_fonts, safe_font_name, ui_scale, '正在生成全局字体映射文件：42-repl-global.conf', '生成 42-repl-global.conf 失败')
+
 if verify_files(csgo_fonts, font_name):
-	input(f'\n[完成] 游戏字体已更改为: {font_name}')
+	print('\n所有配置任务已成功执行，请启动 Counter-Strike 2 以查看新的字体效果')
+	finish_execution(0)
 else:
-	input('\n[错误] 字体安装可能未成功，请检查以上错误信息')
+	print('\n配置执行过程中可能存在不完整的操作，请检查上述错误信息')
+	finish_execution(1)
