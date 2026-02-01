@@ -351,9 +351,9 @@ def write_repl_conf(core_fonts, safe_font_name, ui_scale, success_msg, error_msg
 		</edit>
 	</match>
 """)
-		fonts_to_replace = ['Stratum2', 'Stratum2 Bold', 'Arial', 'Times New Roman', 'Courier New', 'notosans', 'notoserif', 'notomono-regular', 'noto']
-		for font_to_repl in fonts_to_replace:
-			f.write(f"""
+			fonts_to_replace = ['Stratum2', 'Stratum2 Bold', 'Arial', 'Times New Roman', 'Courier New', 'notosans', 'notoserif', 'notomono-regular', 'noto']
+			for font_to_repl in fonts_to_replace:
+				f.write(f"""
 	<match target="font">
 		<test name="family"><string>{font_to_repl}</string></test>
 		<edit name="family" mode="assign"><string>{safe_font_name}</string></edit>
@@ -362,7 +362,7 @@ def write_repl_conf(core_fonts, safe_font_name, ui_scale, success_msg, error_msg
 		<test name="family"><string>{font_to_repl}</string></test>
 		<edit name="family" mode="prepend" binding="strong"><string>{safe_font_name}</string></edit>
 	</match>""")
-		f.write("\n</fontconfig>")
+			f.write("\n</fontconfig>")
 		print(success_msg)
 	except Exception as e:
 		print_error(error_msg, e)
