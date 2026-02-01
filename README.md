@@ -49,7 +49,7 @@ CS2 Font Changer allows you to customize your Counter-Strike 2 gaming experience
 
 > **Notice**: The font used in the demo is from [ChillBitmap](https://github.com/Warren2060/ChillBitmap)
 
-![en - 1](https://github.com/user-attachments/assets/cb28df40-cb87-4b0f-8f2c-9143fb253e6d)
+![en - 1](https://github.com/user-attachments/assets/2e606a9b-2e3c-48d8-835d-2d77e42f1241)
 ![en - 2](https://github.com/user-attachments/assets/c377f364-09dc-4064-ae5b-37af5b8ba76f)
 ![en - 3](https://github.com/user-attachments/assets/cf36ee17-7f74-445f-b29d-790e98eb75a0)
 ![en - 4](https://github.com/user-attachments/assets/56ffc199-2a29-4c8c-92e9-db101d4b6bf7)
